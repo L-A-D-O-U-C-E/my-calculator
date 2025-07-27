@@ -1,0 +1,103 @@
+// 1. ดึงองค์ประกอบที่จำเป็นจาก HTML
+const display = document.querySelector('.calculator-display'); // ช่องแสดงผล
+const buttons = document.querySelector('.calculator-buttons'); // กลุ่มปุ่มทั้งหมด
+
+// 2. กำหนดตัวแปรสำหรับเก็บสถานะ
+let firstOperand = null;  // ตัวเลขตัวแรก
+let operator = null;      // ตัวดำเนินการ (+, -, *, /)
+let waitingForSecondOperand = false; // สถานะว่ากำลังรอตัวเลขที่สองหรือไม่
+
+// 3. ฟังก์ชันสำหรับอัปเดตช่องแสดงผล
+function updateDisplay() {
+    display.value = display.value === '0' ? '0' : display.value; // ถ้าไม่มีอะไรก็เป็น 0
+}
+
+// 4. ฟังก์ชันจัดการเมื่อคลิกตัวเลข
+function inputDigit(digit) {
+    if (waitingForSecondOperand === true) {
+        display.value = digit;
+        waitingForSecondOperand = false;
+    } else {
+        display.value = display.value === '0' ? digit : display.value + digit;
+    }
+}
+
+// 5. ฟังก์ชันจัดการเมื่อคลิกตัวดำเนินการ
+function handleOperator(nextOperator) {
+    const inputValue = parseFloat(display.value); // แปลงค่าในช่องแสดงผลเป็นตัวเลข
+
+    if (firstOperand === null && !isNaN(inputValue)) {
+        firstOperand = inputValue;
+    } else if (operator) {
+        // ถ้ามีตัวดำเนินการเดิมอยู่แล้ว ให้คำนวณค่าก่อน
+        const result = performCalculation[operator](firstOperand, inputValue);
+        display.value = String(result);
+        firstOperand = result;
+    }
+
+    waitingForSecondOperand = true;
+    operator = nextOperator; // เก็บตัวดำเนินการใหม่
+}
+
+// 6. Object สำหรับเก็บฟังก์ชันการคำนวณ (+, -, *, /)
+const performCalculation = {
+    '/': (firstOperand, secondOperand) => firstOperand / secondOperand,
+    '*': (firstOperand, secondOperand) => firstOperand * secondOperand,
+    '+': (firstOperand, secondOperand) => firstOperand + secondOperand,
+    '-': (firstOperand, secondOperand) => firstOperand - secondOperand,
+    '=': (firstOperand, secondOperand) => secondOperand // สำหรับปุ่มเท่ากับ
+};
+
+// 7. ฟังก์ชันสำหรับเคลียร์
+function resetCalculator() {
+    display.value = '0';
+    firstOperand = null;
+    operator = null;
+    waitingForSecondOperand = false;
+}
+
+// 8. เพิ่ม Event Listener ให้กับปุ่มทั้งหมด
+buttons.addEventListener('click', (event) => {
+    const { target } = event; // ปุ่มที่ถูกคลิก
+
+    if (!target.matches('button')) { // ถ้าไม่ใช่ปุ่ม ให้ไม่ทำอะไร
+        return;
+    }
+
+    if (target.classList.contains('operator')) { // ถ้าเป็นปุ่มตัวดำเนินการ
+        handleOperator(target.value);
+        updateDisplay();
+        return;
+    }
+
+    if (target.classList.contains('decimal')) { // ถ้าเป็นปุ่มจุดทศนิยม
+        if (!display.value.includes('.')) {
+            inputDigit(target.value);
+        }
+        return;
+    }
+
+    if (target.classList.contains('clear')) { // ถ้าเป็นปุ่มเคลียร์
+        resetCalculator();
+        updateDisplay();
+        return;
+    }
+
+    if (target.classList.contains('equal-sign')) { // ถ้าเป็นปุ่มเท่ากับ
+        if (operator && firstOperand !== null && !waitingForSecondOperand) {
+            const inputValue = parseFloat(display.value);
+            const result = performCalculation[operator](firstOperand, inputValue);
+            display.value = String(result);
+            firstOperand = null; // รีเซ็ตเพื่อเริ่มคำนวณใหม่
+            operator = null;
+            waitingForSecondOperand = false;
+        }
+        return;
+    }
+
+    inputDigit(target.value); // ถ้าเป็นปุ่มตัวเลข
+    updateDisplay();
+});
+
+// เริ่มต้นแสดงผล 0
+updateDisplay();
